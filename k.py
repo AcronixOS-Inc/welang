@@ -376,7 +376,7 @@ class MainWindow(QMainWindow):
 
     def update_title(self):
         self.setWindowTitle(
-            "%s - WeLang Developer Studio 2.31" % (os.path.basename(self.path) if self.path else "Untitled")
+            "%s - K# Developer Studio 2.31" % (os.path.basename(self.path) if self.path else "Untitled")
         )
 
     def edit_toggle_wrap(self):
@@ -388,7 +388,7 @@ class MainWindow(QMainWindow):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    app.setApplicationName("WeLang Developer Studio 2.31")
+    app.setApplicationName("K# Developer Studio 2.31")
 
     window = MainWindow()
     app.exec_()
