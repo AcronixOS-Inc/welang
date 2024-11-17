@@ -1,0 +1,9 @@
+func .db {
+var.create pes
+var.set pes = 'Psina'
+!set command = 'pes'
+}
+
+start prg:
+!cr pes
+stop prg

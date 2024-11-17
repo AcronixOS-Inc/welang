@@ -1,0 +1,13 @@
+func .db {
+; This is a comment!
+var.create hello
+var.set hello = 'Hi! This is KLang 1.1!'
+!set command = 'klang'
+{
+
+start prg:
+!cr hello
+stop prg
+
+
+

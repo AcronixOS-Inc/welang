@@ -2,14 +2,17 @@ import os
 import sys
 import uuid
 import re
-from PyQt5.QtGui import QFont, QIcon, QImage, QTextDocument, QKeySequence
+import time
+from PyQt5 import QtGui, QtCore, QtWidgets
+from PyQt5.QtGui import QFont, QIcon, QImage, QTextDocument, QKeySequence, QPixmap
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QTextEdit, QVBoxLayout, QWidget,
-    QStatusBar, QToolBar, QAction, QFileDialog, QFontComboBox, QComboBox, QMessageBox
+    QStatusBar, QToolBar, QAction, QFileDialog, QFontComboBox, QComboBox, QMessageBox, QLabel, QSplashScreen
 )
-from PyQt5.QtCore import QSize
+from PyQt5.QtCore import QSize, Qt
 from PyQt5.QtPrintSupport import QPrintDialog
 
+# Create massives for K#DS
 FONT_SIZES = [7, 8, 9, 10, 11, 12, 13, 14, 18, 24, 36, 48, 64, 72, 96, 144, 288]
 IMAGE_EXTENSIONS = ['.jpg', '.png', '.bmp']
 HTML_EXTENSIONS = ['.htm', '.html']
@@ -53,6 +56,8 @@ class WeLanguageInterpreter:
                 self.handle_mod(line)
             elif line.startswith('!cr '):
                 self.handle_command_execution(line)
+            elif line.startswith('input '):
+                self.handle_input(line)
 
     def handle_variable_declaration(self, line):
         match = re.match(r"var.create (\w+)", line)
@@ -122,6 +127,18 @@ class WeLanguageInterpreter:
             if self.debug_mode:
                 print(f"Modifier set: {mod_value}")
 
+    def handle_input(self, line):
+        match = re.match(r"input (\w+)", line)
+        if match:
+            var_name = match.group(1)
+            if var_name in self.variables:
+                user_input = input(f"Enter value for {var_name}: ")
+                self.variables[var_name] = user_input
+                if self.debug_mode:
+                    print(f"Variable {var_name} set to '{user_input}'")
+            else:
+                print(f"Error: Variable '{var_name}' not declared.")
+
 class TextEdit(QTextEdit):
     def canInsertFromMimeData(self, source):
         return source.hasImage() or super(TextEdit, self).canInsertFromMimeData(source)
@@ -158,7 +175,7 @@ class MainWindow(QMainWindow):
         layout = QVBoxLayout()
         self.editor = TextEdit()
         self.editor.selectionChanged.connect(self.update_format)
-        font = QFont('Times', 12)
+        font = QFont('Hack', 12)
         self.editor.setFont(font)
         self.path = None
         layout.addWidget(self.editor)
@@ -204,6 +221,12 @@ class MainWindow(QMainWindow):
         print_action.triggered.connect(self.file_print)
         file_menu.addAction(print_action)
         file_toolbar.addAction(print_action)
+
+        file_menu.addSeparator()
+
+        exit_action = QAction("Exit", self)
+        exit_action.setStatusTip("Exit program (save project before exit)")
+        file_menu.addAction(exit_action)
 
         edit_toolbar = QToolBar("Edit")
         edit_toolbar.setIconSize(QSize(16, 16))
@@ -270,7 +293,7 @@ class MainWindow(QMainWindow):
         run_action.triggered.connect(self.run_file)
         debug_menu.addAction(run_action)
 
-        self.interpreter = WeLanguageInterpreter()  # Instantiate the interpreter
+        self.interpreter = WeLanguageInterpreter()
 
         self.fonts = QFontComboBox()
         self.fonts.currentFontChanged.connect(self.editor.setCurrentFont)
@@ -292,6 +315,21 @@ class MainWindow(QMainWindow):
         documentation_action.triggered.connect(self.show_documentation)
         help_menu.addAction(documentation_action)
 
+        about_action = QAction("About K# Studio", self)
+        about_action.setStatusTip("View information about program")
+        about_action.triggered.connect(self.show_about)
+        help_menu.addAction(about_action)
+
+    def show_about(self):
+        dlg = QMessageBox(self)
+        dlg.setWindowTitle("About program")
+        dlg.setText(
+            "K# Developer Studio\n\n"
+            "Version 2.4\n"
+            "(c) WeLang Community, 2024\n"
+        )
+        dlg.exec_()
+
     def show_documentation(self):
         dlg = QMessageBox(self)
         dlg.setWindowTitle("Documentation")
@@ -304,6 +342,7 @@ class MainWindow(QMainWindow):
             "mod value - Modifies the debug mode\n"
             "!set command = 'command' - Maps a command to a variable\n"
             "!cr var_name - Executes a command, printing the variable value\n"
+            "input var_name - Reads an input from the console into a variable\n"
         )
         dlg.exec_()
 
@@ -321,7 +360,7 @@ class MainWindow(QMainWindow):
         dlg.show()
 
     def file_open(self):
-        path, _ = QFileDialog.getOpenFileName(self, "Open project", "", 
+        path, _ = QFileDialog.getOpenFileName(self, "Open project", "",
             "WeLang Program (*.wel);;WeLang Program Alternative (*.wla);;All files (*.*)")
         if not path:
             return
@@ -351,7 +390,7 @@ class MainWindow(QMainWindow):
 
     def file_saveas(self):
         path, _ = QFileDialog.getSaveFileName(
-            self, "Save project", "", 
+            self, "Save project", "",
             "WeLang Program (*.wel);;WeLang Program Alternative (*.wla);;All files (*.*)"
         )
         if not path:
@@ -376,19 +415,36 @@ class MainWindow(QMainWindow):
 
     def update_title(self):
         self.setWindowTitle(
-            "%s - K# Developer Studio 2.31" % (os.path.basename(self.path) if self.path else "Untitled")
+            "%s - WeLang Developer Studio 2.31" % (os.path.basename(self.path) if self.path else "Untitled")
         )
 
     def edit_toggle_wrap(self):
         self.editor.setLineWrapMode(1 if self.editor.lineWrapMode() == 0 else 0)
 
     def run_file(self):
-        code = self.editor.toPlainText()  # Retrieve the text from the editor
-        self.interpreter.parse_and_execute(code)  # Pass the text to the interpreter
+        code = self.editor.toPlainText()
+        self.interpreter.parse_and_execute(code)
 
 if __name__ == '__main__':
-    app = QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     app.setApplicationName("K# Developer Studio 2.31")
 
+    # Load the splash image
+    splash_pix = QPixmap('Boeing.png')  # Replace with your image path
+
+    # Create and display the splash screen
+    splash = QSplashScreen(splash_pix, Qt.WindowStaysOnTopHint)
+    splash.show()
+
+    # Allow some time for the splash screen to be visible
+    time.sleep(2)  # Optional, but provides a better user experience
+
+    # Initialize and show the main window
     window = MainWindow()
+    window.show()
+
+    # Close the splash screen after the main window is fully initialized
+    splash.finish(window)
+
+    # Start the application event loop
     app.exec_()
